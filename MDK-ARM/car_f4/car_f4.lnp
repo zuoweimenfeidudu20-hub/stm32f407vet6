@@ -10,6 +10,7 @@
 "car_f4\stm32f4xx_it.o"
 "car_f4\stm32f4xx_hal_msp.o"
 "car_f4\stm32f4xx_hal_timebase_tim.o"
+"car_f4\motor.o"
 "car_f4\stm32f4xx_hal_tim.o"
 "car_f4\stm32f4xx_hal_tim_ex.o"
 "car_f4\stm32f4xx_hal_rcc.o"
