@@ -1,0 +1,30 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Keil: Build",
+            "type": "shell",
+            "command": "${env:SystemRoot}/System32/WindowsPowerShell/v1.0/powershell.exe",
+            "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/.vscode/keil.ps1", "build"],
+            "group": { "kind": "build", "isDefault": true },
+            "problemMatcher": [],
+            "presentation": { "reveal": "always", "panel": "shared" }
+        },
+        {
+            "label": "Keil: Flash",
+            "type": "shell",
+            "command": "${env:SystemRoot}/System32/WindowsPowerShell/v1.0/powershell.exe",
+            "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/.vscode/keil.ps1", "flash"],
+            "dependsOn": "Keil: Build",
+            "problemMatcher": []
+        },
+        {
+            "label": "Keil: Debug",
+            "type": "shell",
+            "command": "${env:SystemRoot}/System32/WindowsPowerShell/v1.0/powershell.exe",
+            "args": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "${workspaceFolder}/.vscode/keil.ps1", "debug"],
+            "dependsOn": "Keil: Build",
+            "problemMatcher": []
+        }
+    ]
+}

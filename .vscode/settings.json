@@ -1,0 +1,6 @@
+{
+    "files.associations": { "*.h": "c" },
+    "C_Cpp.default.configurationProvider": "",
+    "C_Cpp.errorSquiggles": "enabled",
+    "cmake.sourceDirectory": "C:/Users/34031/Desktop/project/Drivers/CMSIS/NN"
+}
