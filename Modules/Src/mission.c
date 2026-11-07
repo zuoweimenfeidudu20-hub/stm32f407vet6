@@ -226,7 +226,13 @@ static void track_run_abnormal(trackpattern pattern, int error, uint16_t bits)
     switch (current_state2)
     {
     case state2_line:
-        if(track_confirm(cross_stage2==1&&pattern==pattern_rightbranch,3))
+        if(cross_stage2!=1){
+            condition_rst2(state2_fault,error);
+            send_newtarget(0,0);
+            break;
+        }
+
+        if(track_confirm(pattern==pattern_rightbranch,3))
         {
             if (hwt101_turn_right_35(1U)<0)
             {
@@ -292,7 +298,7 @@ static void track_run_abnormal(trackpattern pattern, int error, uint16_t bits)
             send_newtarget(0, 0);
             break;
         }
-        
+
         send_newtarget(base_pwm2,pwm_limit2);
         int result=hwt101_turn_right_35(0U);
         if(result<0)//陀螺仪参数无效/超时
@@ -358,13 +364,13 @@ static void track_run_abnormal(trackpattern pattern, int error, uint16_t bits)
             send_newtarget(0, 0);
             break;
         }
-        if (track_confirm(pattern == pattern_leftbranch, 3))
+        if(center_white_confirm(bits))
         {
-            condition_rst2(state2_branch_lockleft2, error);
-            send_newtarget(base_pwm2, -pwm_limit2);
+            condition_rst2(state2_teshu_lockright2, error);
+            send_newtarget(base_pwm2,-pwm_limit2);
         }
         else
-            send_newtarget(base_pwm2, correction(error, 10));
+            send_newtarget(base_pwm2,line_pid(&control2,error));
         break;
     
     case state2_teshu_lockright2:
@@ -375,20 +381,21 @@ static void track_run_abnormal(trackpattern pattern, int error, uint16_t bits)
             break;
         }
         send_newtarget(base_pwm2, pwm_limit2);
-        if (track_confirm(maxleft, 3))
+        if (track_confirm(, 3))
         {
             cross_stage2 = 5;
             condition_rst2(state2_stair4, error);
         }
         break;
+
     case state2_stair4:
-        if (cross_stage2 != 5)
+        if(cross_stage2!=5)
         {
             condition_rst2(state2_fault, error);
             send_newtarget(0, 0);
             break;
         }
-        send_newtarget(base_pwm2, correction(error, 10));
+        send_newtarget(base_pwm2,line_pid(&control2,error));
         break;
     
     case state2_stop:
