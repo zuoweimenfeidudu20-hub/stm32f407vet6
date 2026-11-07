@@ -87,6 +87,13 @@ extern int PercentToCounts(int32_t percent)
     }
 }
 
+void pidmotor_rst(PIDMotor_Controller *controller)
+{
+    controller->integral = 0;
+    controller->previous_error = 0;
+    controller->previous_target = 0;
+}
+
 int pid_motor(PIDMotor_Controller *controller, int target_percent,int target_counts, int measured_counts)
 {
     int error,derivative,correction,output,previous_integral;

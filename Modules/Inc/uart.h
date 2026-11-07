@@ -12,6 +12,7 @@ typedef enum {
     UART_SEND_FORMAT_ERROR
 } uart_send_status_t;
 
+void track_report(void);
 void uart_report_encoder(int32_t tim3_count, int32_t tim4_count);
 /* Call from the main loop; reports PID values once per second on USART1. */
 void uart_report_pidmotor(void);

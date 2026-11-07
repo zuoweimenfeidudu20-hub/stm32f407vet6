@@ -1,0 +1,7 @@
+*** Using Compiler 'V5.06 update 6 (build 750)', folder: 'C:\Keil_v5\ARM\ARMCC\Bin'
+Build target 'car_f4'
+Error instantiating RTE components
+Error #543: Device STM32F407VETx(STMicroelectronics) not found, pack 'Keil.STM32F4xx_DFP' is not installed
+Error #541: 'ARM::CMSIS:CORE:4.3.0' component is missing (previously found in pack 'ARM.CMSIS')
+Target not created.
+Build Time Elapsed:  00:00:00

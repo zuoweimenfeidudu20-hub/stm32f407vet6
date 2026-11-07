@@ -36,4 +36,4 @@ car_f4\oled.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h
 car_f4\oled.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h
 car_f4\oled.o: ../Core/Inc/main.h
 car_f4\oled.o: ../Core/Inc/spi.h
-car_f4\oled.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
+car_f4\oled.o: ../Core/Inc/tim.h

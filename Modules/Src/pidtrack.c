@@ -66,6 +66,8 @@ HAL_StatusTypeDef gray_init(void)
 HAL_StatusTypeDef gray_read(uint16_t *sensor_state)
 {
     uint8_t input[2];
+    uint16_t raw;
+    uint16_t reversed = 0U;
     HAL_StatusTypeDef status;
 
     if (sensor_state==NULL) return HAL_ERROR;
@@ -73,15 +75,21 @@ HAL_StatusTypeDef gray_read(uint16_t *sensor_state)
     status=HAL_I2C_Mem_Read(&hi2c1, GRAY_PD9555_ADDRESS,GRAY_INPUT_REGISTER, I2C_MEMADD_SIZE_8BIT,input, sizeof(input), GRAY_I2C_TIMEOUT_MS);
     if (status != HAL_OK) return status;
 
-    *sensor_state=(uint16_t)(((uint16_t)input[1]<<8)|input[0]);
-    *sensor_state&=GRAY_SENSOR_MASK;//强制清除4位无效路
+    raw = (uint16_t)(((uint16_t)input[1] << 8) | input[0]);
+    raw &= GRAY_SENSOR_MASK;
+    for (int i = 0; i < GRAY_SENSOR_COUNT; i++) {
+        if ((raw & (1U << i)) != 0U) {
+            reversed |= (uint16_t)(1U << (GRAY_SENSOR_COUNT - 1 - i));
+        }
+    }
+    *sensor_state = reversed;
     return HAL_OK;
 }
 
 void set_target(int base_speed,int correction)
 {
-    init_leftpwm=Clamp(base_speed-correction,0,100);
-    init_rightpwm=Clamp(base_speed+correction,0,100);
+    init_leftpwm=Clamp(base_speed+correction,0,100);
+    init_rightpwm=Clamp(base_speed-correction,0,100);
 }
 
 HAL_StatusTypeDef pidtrack_update(void)

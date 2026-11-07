@@ -37,4 +37,7 @@ car_f4\uart.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h
 car_f4\uart.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h
 car_f4\uart.o: ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h
 car_f4\uart.o: ../Modules/Inc/pidmotor.h
+car_f4\uart.o: ../Modules/Inc/mission.h
+car_f4\uart.o: ../Modules/Inc/key.h
+car_f4\uart.o: ../Modules/Inc/hwt101.h
 car_f4\uart.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h

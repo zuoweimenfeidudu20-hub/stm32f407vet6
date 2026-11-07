@@ -140,7 +140,7 @@ int main(void)
   encoder_init();
   pidmotor_init();
   pidmotor_enable=1;
-  pidtrack_enable=1;  
+  pidtrack_enable=1;
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -162,6 +162,7 @@ int main(void)
       {
         pidtrack_last_tick = HAL_GetTick();
         mission_update(key_getmode());
+        track_report();
       }
     }
     else if (pidtrack_was_enabled != 0U)
@@ -174,7 +175,7 @@ int main(void)
       key_last_tick = HAL_GetTick();
       key_tick5ms();
     }
-    uart_report_pidmotor();
+    //uart_report_pidmotor();
   }
   /* USER CODE END 3 */
 }
@@ -244,6 +245,10 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   if (htim->Instance == TIM8)
   {
     HAL_IncTick();
+    if ((HAL_GetTick() % 10U) == 0U)
+    {
+      hwt101_turn_tick10ms();
+    }
     // if (key_scan_enabled && (HAL_GetTick() % 5U) == 0U)
     // {
     //   key_tick5ms();

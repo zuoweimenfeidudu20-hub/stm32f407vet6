@@ -1,6 +1,10 @@
 #include "hwt101.h"
 
 #define HWT101_FRAME_SIZE 11U
+#define HWT101_MAX_AGE_MS 100U
+#define HWT101_TURN_TOLERANCE_DEG 2.0f
+#define HWT101_WRONG_DIRECTION_DEG 5.0f
+#define HWT101_RIGHT_35_TIMEOUT_MS 2500U
 
 static UART_HandleTypeDef *sensor_uart;
 static uint8_t rx_byte;
@@ -9,9 +13,16 @@ static uint8_t frame_len;
 static volatile int16_t yaw_raw;
 static volatile uint32_t yaw_tick;
 static volatile uint8_t yaw_valid;
-static float right_turn_target_yaw;
-static uint32_t right_turn_start_tick;
-static uint8_t right_turn_active;
+static float turn_delta_deg;
+static float turn_previous_yaw;
+static float turn_progress_deg;
+static uint32_t turn_start_tick;
+static uint32_t turn_timeout_ms;
+static volatile int8_t turn_status = HWT101_TURN_IDLE;
+static float turn_start_yaw;
+static float turn_end_yaw;
+static volatile uint8_t turn_angles_valid;
+static volatile uint8_t turn_end_valid;
 
 /* Sliding window permits recovery after a lost or corrupted byte. */
 static void hwt101_parse_byte(uint8_t byte)
@@ -54,7 +65,9 @@ HAL_StatusTypeDef hwt101_init(UART_HandleTypeDef *uart)
     sensor_uart = uart;
     frame_len = 0U;
     yaw_valid = 0U;
-    right_turn_active = 0U;
+    turn_status = HWT101_TURN_IDLE;
+    turn_angles_valid = 0U;
+    turn_end_valid = 0U;
     status = HAL_UART_Receive_IT(sensor_uart, &rx_byte, 1U);
     if (status != HAL_OK) sensor_uart = NULL;
     return status;
@@ -101,32 +114,96 @@ float hwt101_angle_error(float target, float current)
     return error;
 }
 
-int hwt101_turn_right_35(uint8_t start)
+HAL_StatusTypeDef hwt101_turn_begin(float delta_deg, uint32_t timeout_ms)
 {
     float yaw;
     uint32_t age_ms;
+    uint32_t primask;
 
-    if (!hwt101_get_yaw(&yaw, &age_ms) || age_ms > 100U) {
-        right_turn_active = 0U;
-        return -1;
+    turn_angles_valid = 0U;
+    turn_end_valid = 0U;
+    /* The shortest-angle comparison is unambiguous only below 180 degrees. */
+    if (delta_deg == 0.0f || delta_deg <= -180.0f ||
+        delta_deg >= 180.0f || timeout_ms == 0U) {
+        turn_status = HWT101_TURN_INVALID;
+        return HAL_ERROR;
+    }
+    if (!hwt101_get_yaw(&yaw, &age_ms) || age_ms > HWT101_MAX_AGE_MS) {
+        turn_status = HWT101_TURN_NO_YAW;
+        return HAL_ERROR;
     }
 
-    if (start != 0U) {
-        /* Right turn is assumed to decrease yaw; verify on the actual car. */
-        right_turn_target_yaw = yaw - 35.0f;
-        right_turn_start_tick = HAL_GetTick();
-        right_turn_active = 1U;
-        return 0;
+    primask = __get_PRIMASK();
+    __disable_irq();
+    turn_start_yaw = yaw;
+    turn_previous_yaw = yaw;
+    turn_progress_deg = 0.0f;
+    turn_angles_valid = 1U;
+    turn_delta_deg = delta_deg;
+    turn_start_tick = HAL_GetTick();
+    turn_timeout_ms = timeout_ms;
+    turn_status = 0;
+    if (primask == 0U) __enable_irq();
+    return HAL_OK;
+}
+
+void hwt101_turn_tick10ms(void)
+{
+    float yaw;
+    float directed_progress;
+    uint32_t age_ms;
+
+    if (turn_status != 0) return;
+    if ((HAL_GetTick() - turn_start_tick) > turn_timeout_ms) {
+        if (hwt101_get_yaw(&yaw, &age_ms) && age_ms <= HWT101_MAX_AGE_MS) {
+            turn_end_yaw = yaw;
+            turn_end_valid = 1U;
+        }
+        turn_status = HWT101_TURN_TIMEOUT;
+        return;
+    }
+    if (!hwt101_get_yaw(&yaw, &age_ms) || age_ms > HWT101_MAX_AGE_MS) {
+        turn_status = HWT101_TURN_NO_YAW;
+        return;
     }
 
-    if (right_turn_active == 0U) return -1;
-    if ((HAL_GetTick() - right_turn_start_tick) > 2500U) {
-        right_turn_active = 0U;
-        return -1;
+    turn_progress_deg += hwt101_angle_error(yaw, turn_previous_yaw);
+    turn_previous_yaw = yaw;
+    directed_progress = turn_delta_deg < 0.0f ? -turn_progress_deg : turn_progress_deg;
+    if (directed_progress <= -HWT101_WRONG_DIRECTION_DEG) {
+        turn_end_yaw = yaw;
+        turn_end_valid = 1U;
+        turn_status = HWT101_TURN_WRONG_DIRECTION;
     }
-    if (hwt101_angle_error(right_turn_target_yaw, yaw) >= -2.0f) {
-        right_turn_active = 0U;
-        return 1;
+    else if (directed_progress >=
+             (turn_delta_deg < 0.0f ? -turn_delta_deg : turn_delta_deg) - HWT101_TURN_TOLERANCE_DEG) {
+        turn_end_yaw = yaw;
+        turn_end_valid = 1U;
+        turn_status = 1;
     }
-    return 0;
+}
+
+int hwt101_turn_result(void)
+{
+    return turn_status < 0 ? -1 : turn_status;
+}
+
+hwt101_turn_state hwt101_turn_get_state(void)
+{
+    return (hwt101_turn_state)turn_status;
+}
+
+uint8_t hwt101_turn_get_angles(float *start, float *end, uint8_t *end_valid)
+{
+    uint32_t primask;
+    uint8_t valid;
+    if (start == NULL || end == NULL || end_valid == NULL) return 0U;
+    primask = __get_PRIMASK();
+    __disable_irq();
+    valid = turn_angles_valid;
+    *start = turn_start_yaw;
+    *end = turn_end_yaw;
+    *end_valid = turn_end_valid;
+    if (primask == 0U) __enable_irq();
+    return valid;
 }
