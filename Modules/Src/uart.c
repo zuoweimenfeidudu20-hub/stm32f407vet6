@@ -146,7 +146,7 @@ void track_report(void)
     if (!mission_report_snapshot(&mode, &pattern, &state1, &state2, &state3)) return;
     state = mode == key1_putong ? (int)state1 : mode == key2_teshu ? (int)state2 : (int)state3;
     name = mode == key1_putong ? state1_name(state1) : mode == key2_teshu ? state2_name(state2) : state3_name(state3);
-    show_turn = mode == key3_baidong && (state3 == state3_baidong || state3 == state3_fault);
+    show_turn = 0;
     turn = hwt101_turn_get_state();
     if (mode == last_mode && state == last_state &&
         (!show_turn || (int)turn == last_turn) &&
