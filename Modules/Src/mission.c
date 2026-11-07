@@ -216,8 +216,6 @@ static void track_run_normal(trackpattern pattern, int error)
 
 static void track_run_abnormal(trackpattern pattern, int error, uint16_t bits)
 {
-    int maxleft = (bits & 0x003U) != 0U;
-    int maxright = (bits & 0xC00U) != 0U;
     int check_lost = current_state2 == state2_line || current_state2 == state2_stair1 || current_state2 == state2_stair3 || current_state2 == state2_teshu_lockright2 || current_state2 == state2_stair4;
     
     if (check_lost&&track_lost(pattern))
@@ -247,6 +245,13 @@ static void track_run_abnormal(trackpattern pattern, int error, uint16_t bits)
 
     case state2_c_lockright:
     {
+        if (cross_stage2!=1)
+        {
+            condition_rst2(state2_fault, error);
+            send_newtarget(0, 0);
+            break;
+        }
+
         int result=hwt101_turn_right_35(0U);
         if(result<0)//陀螺仪参数无效/超时
         {
@@ -281,6 +286,13 @@ static void track_run_abnormal(trackpattern pattern, int error, uint16_t bits)
         break;
     
     case state2_teshu_lockleft1:
+        if (cross_stage2!=2)
+        {
+            condition_rst2(state2_fault, error);
+            send_newtarget(0, 0);
+            break;
+        }
+        
         send_newtarget(base_pwm2,pwm_limit2);
         int result=hwt101_turn_right_35(0U);
         if(result<0)//陀螺仪参数无效/超时
@@ -300,7 +312,7 @@ static void track_run_abnormal(trackpattern pattern, int error, uint16_t bits)
         break;
 
     case state2_stair2:
-        if(cross_stage2!=4)
+        if(cross_stage2!=3)
         {
             condition_rst2(state2_fault, error);
             send_newtarget(0, 0);
@@ -309,7 +321,7 @@ static void track_run_abnormal(trackpattern pattern, int error, uint16_t bits)
         send_newtarget(base_pwm2,line_pid(&control2,error));
         if (track_confirm(pattern==pattern_leftbranch,3))
         {
-            condition_rst2(state2_teshu_lockright2, error);
+            condition_rst2(state2_branch_lockleft2, error);
             send_newtarget(base_pwm2,pwm_limit2);
         }
         break;
@@ -331,22 +343,16 @@ static void track_run_abnormal(trackpattern pattern, int error, uint16_t bits)
         }
         if(result==1)
         {
-            cross_stage2=3;
-            condition_rst2(state2_stair2,error);
+            cross_stage2=4;
+            condition_rst2(state2_stair3,error);
             send_newtarget(base_pwm2,line_pid(&control2,error));
             break;
         }
         send_newtarget(base_pwm2,pwm_limit2);
         break;
-            cross_stage2 = 4;
-            condition_rst2(state2_stair3, error);
-
-        break;
-
-
 
     case state2_stair3:
-        if (cross_stage2 != 3)
+        if(cross_stage2!=4)
         {
             condition_rst2(state2_fault, error);
             send_newtarget(0, 0);

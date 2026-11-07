@@ -482,6 +482,11 @@
               <FilePath>../Modules/Src/hwt101.c</FilePath>
             </File>
             <File>
+              <FileName>hcsr04.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>../Modules/Src/hcsr04.c</FilePath>
+            </File>
+            <File>
               <FileName>uart.c</FileName>
               <FileType>1</FileType>
               <FilePath>../Modules/Src/uart.c</FilePath>
