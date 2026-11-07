@@ -28,6 +28,12 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "motor.h"
+#include "pidmotor.h"
+#include "pidtrack.h"
+#include "uart.h"
+#include "key.h"
+#include "mission.h"
+#include "hwt101.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -48,6 +54,12 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+static uint32_t pidtrack_last_tick;
+static uint32_t key_last_tick;
+static uint8_t pidtrack_was_enabled;
+// static volatile uint8_t key_scan_enabled;
+static volatile int pidmotor_enable=0;
+static volatile int pidtrack_enable=0;
 
 /* USER CODE END PV */
 
@@ -104,10 +116,31 @@ int main(void)
   MX_UART4_Init();
   MX_TIM5_Init();
   /* USER CODE BEGIN 2 */
+  if (hwt101_init(&huart3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  key_init();
+  // key_scan_enabled = 1U;
   if (motor_init() != HAL_OK)
   {
     Error_Handler();
   }
+  
+  if (encoder_init() != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (gray_init() != HAL_OK)
+  {
+    Error_Handler();
+  }
+  pidtrack_last_tick=HAL_GetTick();
+  key_last_tick=pidtrack_last_tick;
+  encoder_init();
+  pidmotor_init();
+  pidmotor_enable=1;
+  pidtrack_enable=1;  
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -117,6 +150,31 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+    if (pidtrack_enable != 0)
+    {
+      if (pidtrack_was_enabled == 0U)
+      {
+        mission_reset();
+        pidtrack_last_tick = HAL_GetTick();
+        pidtrack_was_enabled = 1U;
+      }
+      if ((HAL_GetTick() - pidtrack_last_tick) >= 10U)
+      {
+        pidtrack_last_tick = HAL_GetTick();
+        mission_update(key_getmode());
+      }
+    }
+    else if (pidtrack_was_enabled != 0U)
+    {
+      set_target(0, 0);
+      pidtrack_was_enabled = 0U;
+    }
+    if ((HAL_GetTick() - key_last_tick) >= 5U)
+    {
+      key_last_tick = HAL_GetTick();
+      key_tick5ms();
+    }
+    uart_report_pidmotor();
   }
   /* USER CODE END 3 */
 }
@@ -142,7 +200,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = 25;
+  RCC_OscInitStruct.PLL.PLLM = 8;
   RCC_OscInitStruct.PLL.PLLN = 336;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 5;
@@ -186,6 +244,16 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   if (htim->Instance == TIM8)
   {
     HAL_IncTick();
+    // if (key_scan_enabled && (HAL_GetTick() % 5U) == 0U)
+    // {
+    //   key_tick5ms();
+    // }
+    /* USER CODE BEGIN TIM8_PID */
+    if(pidmotor_enable&&(HAL_GetTick() % 10U) == 0)
+    {
+      pidmotor_update();
+    }
+    /* USER CODE END TIM8_PID */
   }
   /* USER CODE BEGIN Callback 1 */
 

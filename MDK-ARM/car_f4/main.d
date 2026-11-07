@@ -41,3 +41,9 @@ car_f4\main.o: ../Core/Inc/tim.h
 car_f4\main.o: ../Core/Inc/usart.h
 car_f4\main.o: ../Core/Inc/gpio.h
 car_f4\main.o: ../Modules/Inc/motor.h
+car_f4\main.o: ../Modules/Inc/pidmotor.h
+car_f4\main.o: ../Modules/Inc/pidtrack.h
+car_f4\main.o: ../Modules/Inc/uart.h
+car_f4\main.o: ../Modules/Inc/key.h
+car_f4\main.o: ../Modules/Inc/mission.h
+car_f4\main.o: ../Modules/Inc/hwt101.h
