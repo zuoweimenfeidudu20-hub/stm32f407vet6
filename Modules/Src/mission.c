@@ -2,6 +2,7 @@
 #include "pidtrack.h"
 #include "pidmotor.h"
 #include "hwt101.h"
+#include "hcsr04.h"
 #include "usart.h"
 #include <stdio.h>
 
@@ -9,9 +10,9 @@
 
 #define base_pwm 15
 #define base_pwm2 13
-#define base_pwm3 15
+#define base_pwm3 16
 
-#define LOST_LIMIT 300U
+#define LOST_TIMEOUT_MS 3000U
 
 #define pwm_limit1 10
 #define pwm_limit2 10
@@ -21,7 +22,16 @@
 #define OUTER_MASK          ((1U << 0) | (1U << 1) | (1U << 10) | (1U << 11))
 #define SENSOR_CONFIRM_FRAMES 4
 
-static track_pid control1 = {
+#define LEFT_EDGE_MASK  (1U << 9)  /* Sensor 10: start right turn. */
+#define RIGHT_EDGE_MASK (1U << 2)  /* Sensor 3: start left turn. */
+#define STATE3_RIGHT_CONFIRM_FRAMES 1U
+#define STATE3_LEFT_CONFIRM_FRAMES 1U
+#define STATE3_HALF_TIMEOUT_MS 5000U
+#define STATE3_MAX_YAW_AGE_MS 100U
+#define STATE3_ENTRY_ANGLE_DEG 175.0f
+#define OBSTACLE_DISTANCE_CM 30.0f
+
+static track_pid control1={
     .pgain = 2,
     .igain = 0,
     .dgain = 1,
@@ -31,10 +41,10 @@ static track_pid control1 = {
     .out_limit = pwm_limit1,
 };
 
-static track_pid control2 = {
-    .pgain = 1,
+static track_pid control2={
+    .pgain = 2,
     .igain = 0,
-    .dgain = 1,
+    .dgain = 2,
     .integral = 0,
     .previous_error = 0,
     .int_limit = 500,
@@ -42,9 +52,9 @@ static track_pid control2 = {
 };
 
 static track_pid control3={
-    .pgain=2,
+    .pgain=1,
     .igain=0,
-    .dgain=1,
+    .dgain=3,
     .integral=0,
     .previous_error=0,
     .int_limit=500,
@@ -59,11 +69,18 @@ static keymode previous_mode = key4_idle;
 static int current_cnt, recover_ticks, center_white_cnt;
 static uint8_t cross_stage1, cross_stage2, center_black, lost_active;
 static int last_pwm, last_correction;
-static int lost_ticks = 0;
+static uint32_t lost_start_tick;
 static int center_black_cnt = 0;
 
 volatile int cnt=0;
 static uint8_t state3_phase;
+static float state3_start_yaw;
+static uint8_t state3_start_pending = 1U;
+static uint32_t state3_key3_count;
+static uint8_t state3_edge_frames;
+static uint32_t state3_phase_tick;
+static state3_debug state3_debug_info;
+
 static float state2_deg1=40.0f; //1.第一次右转进入楼梯
 static float state2_deg2=85.0f; //1.楼梯返回
 static float state2_deg3=35.0f; //1.第二次左转进入楼梯
@@ -75,6 +92,35 @@ static uint8_t report_valid;
 static uint8_t r90_turn_active;
 static uint8_t r90_latched;
 static uint8_t r90_clear_frames;
+
+void send_newtarget(int speed, int turn);
+
+void obstacle(void)
+{
+    send_newtarget(base_pwm,6);
+    HAL_Delay(1000);
+    send_newtarget(0,0);
+}
+
+void obstacle_check(void)
+{
+    float distance_cm;
+
+    if (hcsr04_read_cm(&distance_cm) == HAL_OK &&
+        distance_cm > 0.0f && distance_cm <= OBSTACLE_DISTANCE_CM)
+        obstacle();
+
+    /* The driver enforces its 60 ms minimum measurement interval. */
+    (void)hcsr04_trigger();
+}
+
+void mission_state3_debug_snapshot(state3_debug *snapshot)
+{
+    if (snapshot == NULL) return;
+    *snapshot = state3_debug_info;
+    snapshot->phase = state3_phase;
+    snapshot->cycles = (uint8_t)cnt;
+}
 
 uint8_t mission_report_snapshot(keymode *mode, trackpattern *pattern,
                                 trackstate1 *state1, trackstate2 *state2, trackstate3 *state3)
@@ -95,7 +141,6 @@ static void condition_rst1(trackstate1 next, int error);
 static void condition_rst2(trackstate2 next, int error);
 static void condition_rst3(trackstate3 next, int error);
 static uint8_t track_lost(trackpattern pattern);
-void send_newtarget(int speed, int turn);
 
 static uint8_t track_r90(keymode mode, trackpattern pattern, int error)
 {
@@ -143,7 +188,7 @@ static uint8_t track_r90(keymode mode, trackpattern pattern, int error)
     r90_latched = 1U;
     current_cnt = 0;
     lost_active = 0U;
-    lost_ticks = 0;
+    lost_start_tick = 0U;
     recover_ticks = 0;
     if (hwt101_turn_begin(90.0f, 5000U) != HAL_OK)
     {
@@ -544,9 +589,45 @@ case state2_c_lockright:
     }
 }
 
-static void track_run_baidong(trackpattern pattern, int error, uint16_t bits)
+static void state3_begin_half(uint8_t phase)
 {
-    if (current_state3 != state3_line2 && current_state3 != state3_baidong && current_state3 != state3_stop &&
+    state3_phase = phase;
+    state3_edge_frames = 0U;
+    state3_phase_tick = HAL_GetTick();
+    send_newtarget(base_pwm3, phase == 1U ? pwm_limit3 : -pwm_limit3);
+}
+
+static void state3_fail(state3_fault_reason reason, int error)
+{
+    state3_debug_info.fault = reason;
+    state3_phase = 0U;
+    state3_edge_frames = 0U;
+    condition_rst3(state3_fault, error);
+    send_newtarget(0, 0);
+}
+
+static void track_run_baidong(trackpattern pattern, int error)
+{
+    float yaw;
+    uint32_t age_ms;
+    int target_hit;
+    uint8_t confirm_frames;
+
+    if (current_state3 == state3_fault)
+    {
+        send_newtarget(0, 0);
+        return;
+    }
+    state3_debug_info.delta_valid = hwt101_get_yaw(&yaw, &age_ms) &&
+                                    age_ms <= STATE3_MAX_YAW_AGE_MS;
+    if (state3_debug_info.delta_valid)
+        state3_debug_info.delta = hwt101_angle_error(yaw, state3_start_yaw);
+    if (current_state3 == state3_line2 && !state3_debug_info.delta_valid)
+    {
+        state3_fail(STATE3_FAULT_NO_YAW, error);
+        return;
+    }
+    if (current_state3 != state3_baidong && current_state3 != state3_stop &&
         current_state3 != state3_fault && track_lost(pattern))
     {
         return;
@@ -582,45 +663,52 @@ static void track_run_baidong(trackpattern pattern, int error, uint16_t bits)
         break;
 
     case state3_line2:
-        if ((bits & (1U << 0)) != 0U)
+        if (state3_debug_info.delta >= STATE3_ENTRY_ANGLE_DEG ||
+            state3_debug_info.delta <= -STATE3_ENTRY_ANGLE_DEG)
         {
             cnt = 0;
-            state3_phase = 1U;
             condition_rst3(state3_baidong, error);
-            send_newtarget(base_pwm3, pwm_limit3);
+            lost_active = 0U;
+            lost_start_tick = 0U;
+            recover_ticks = 0;
+            state3_begin_half(1U);
         }
         else
-            send_newtarget(base_pwm3, pwm_limit3);
+            send_newtarget(base_pwm3, line_pid(&control3, error));
         break;
 
     case state3_baidong:
-        if (state3_phase == 1U)
+        if ((HAL_GetTick() - state3_phase_tick) >= STATE3_HALF_TIMEOUT_MS)
         {
-            if ((bits & (1U << 11)) != 0U && (bits & (1U << 0)) == 0U)
-            {
-                state3_phase = 2U;
-                send_newtarget(base_pwm3, -pwm_limit3);
-            }
-            else
-                send_newtarget(base_pwm3, pwm_limit3);
+            state3_fail(STATE3_FAULT_HALF_TIMEOUT, error);
+            break;
         }
-        else if ((bits & (1U << 0)) != 0U && (bits & (1U << 11)) == 0U)
+        target_hit = state3_phase == 1U ?
+            (state3_debug_info.right_hit && !state3_debug_info.left_hit) :
+            (state3_debug_info.left_hit && !state3_debug_info.right_hit);
+        confirm_frames = state3_phase == 1U ?
+            STATE3_RIGHT_CONFIRM_FRAMES : STATE3_LEFT_CONFIRM_FRAMES;
+        if (!target_hit)
+            state3_edge_frames = 0U;
+        else if (state3_edge_frames < confirm_frames)
+            ++state3_edge_frames;
+
+        if (state3_edge_frames < confirm_frames)
+            send_newtarget(base_pwm3, state3_phase == 1U ? pwm_limit3 : -pwm_limit3);
+        else if (state3_phase == 1U)
+            state3_begin_half(2U);
+        else
         {
-            if (++cnt >= 6)
+            if (++cnt >= 4)
             {
                 state3_phase = 0U;
-                cnt = 0;
+                state3_edge_frames = 0U;
                 condition_rst3(state3_tofinish, error);
                 send_newtarget(base_pwm3, line_pid(&control3, error));
             }
             else
-            {
-                state3_phase = 1U;
-                send_newtarget(base_pwm3, pwm_limit3);
-            }
+                state3_begin_half(1U);
         }
-        else
-            send_newtarget(base_pwm3, -pwm_limit3);
         break;
 
     case state3_tofinish:
@@ -671,6 +759,7 @@ static uint8_t track_lost(trackpattern pattern)
 {
     if (pattern == pattern_lost)
     {
+        if (!lost_active) lost_start_tick = HAL_GetTick();
         lost_active = 1;
         recover_ticks = 0;
     }
@@ -678,12 +767,12 @@ static uint8_t track_lost(trackpattern pattern)
     {
         lost_active = 0;
         recover_ticks = 0;
-        lost_ticks = 0;
+        lost_start_tick = 0U;
     }
     if (lost_active)
     {
         current_cnt = 0;
-        if (lost_ticks++ >= LOST_LIMIT)
+        if ((HAL_GetTick() - lost_start_tick) >= LOST_TIMEOUT_MS)
         {
             current_state1 = state1_stop;
             current_state2 = state2_stop;
@@ -709,6 +798,11 @@ void mission_reset(void)
     current_state2=state2_line;
     current_state3=state3_line;
     state3_phase=0U;
+    state3_start_yaw=0.0f;
+    state3_start_pending=1U;
+    state3_edge_frames=0U;
+    state3_phase_tick=0U;
+    state3_debug_info = (state3_debug){0};
     cnt=0;
 
     cross_stage1=0;
@@ -717,7 +811,7 @@ void mission_reset(void)
     current_cnt=0;
     recover_ticks=0;//
     center_white_cnt=0;//
-    lost_ticks=0;
+    lost_start_tick=0U;
 
     center_black = 0;
     center_black_cnt = 0;
@@ -739,11 +833,22 @@ HAL_StatusTypeDef mission_update(keymode mode)
     int error;
     trackpattern pattern;
     HAL_StatusTypeDef status;
+    uint32_t key3_count = key_get_key3_confirm_count();
+    uint32_t age_ms;
     report_valid = 0U;
-    if (mode != previous_mode)
+    if (mode != previous_mode ||
+        (mode == key3_baidong && key3_count != state3_key3_count))
     {
         mission_reset();
         previous_mode = mode;
+    }
+    state3_key3_count = key3_count;
+    if (mode == key3_baidong && state3_start_pending)
+    {
+        state3_start_pending = 0U;
+        if (!hwt101_get_yaw(&state3_start_yaw, &age_ms) ||
+            age_ms > STATE3_MAX_YAW_AGE_MS)
+            state3_fail(STATE3_FAULT_NO_YAW, 0);
     }
     if (mode!=key1_putong&&mode!=key2_teshu&&mode!=key3_baidong)
     {
@@ -753,16 +858,19 @@ HAL_StatusTypeDef mission_update(keymode mode)
     status = gray_read(&bits);
     if (status != HAL_OK)
     {
+        if (mode == key3_baidong) state3_edge_frames = 0U;
         set_target(0, 0);
         return status;
     }
     pattern = track_analyze(bits, &error);
+    state3_debug_info.left_hit = (bits & LEFT_EDGE_MASK) == LEFT_EDGE_MASK;
+    state3_debug_info.right_hit = (bits & RIGHT_EDGE_MASK) == RIGHT_EDGE_MASK;
     if (pattern == pattern_r90 &&
         !((mode == key1_putong && current_state1 == state1_tofinish) ||
           (mode == key2_teshu && current_state2 == state2_stair4) ||
           (mode == key3_baidong && current_state3 == state3_tofinish)))
         pattern = pattern_rightbranch;
-    if (mode != key3_baidong && track_r90(mode, pattern, error))
+    if (track_r90(mode, pattern, error))
     {
         /* The turn temporarily takes control of the motors. */
     }
@@ -771,7 +879,7 @@ HAL_StatusTypeDef mission_update(keymode mode)
     else if (mode == key2_teshu)
         track_run_abnormal(pattern, error, bits);
     else
-        track_run_baidong(pattern, error, bits);
+        track_run_baidong(pattern, error);
     report_pattern = pattern;
     report_valid = 1U;
     return HAL_OK;

@@ -2,7 +2,6 @@
 #include "usart.h"
 #include "pidmotor.h"
 #include "mission.h"
-#include "hwt101.h"
 #include <stdio.h>
 
 static volatile uart_send_status_t uart_last_status = UART_SEND_NOT_ATTEMPTED;
@@ -109,17 +108,13 @@ static const char *state3_name(trackstate3 state)
     }
 }
 
-static const char *turn_name(hwt101_turn_state state)
+static const char *state3_fault_name(state3_fault_reason reason)
 {
-    switch (state)
+    switch (reason)
     {
-    case HWT101_TURN_IDLE: return "idle";
-    case HWT101_TURN_INVALID: return "invalid";
-    case HWT101_TURN_NO_YAW: return "no_yaw";
-    case HWT101_TURN_TIMEOUT: return "timeout";
-    case HWT101_TURN_WRONG_DIRECTION: return "wrong_direction";
-    case HWT101_TURN_ACTIVE: return "turning";
-    case HWT101_TURN_REACHED: return "reached";
+    case STATE3_FAULT_NONE: return "none";
+    case STATE3_FAULT_NO_YAW: return "no_yaw";
+    case STATE3_FAULT_HALF_TIMEOUT: return "half_timeout";
     default: return "unknown";
     }
 }
@@ -129,7 +124,9 @@ void track_report(void)
     static uint32_t last_tick;
     static keymode last_mode = key4_idle;
     static int last_state = -1;
-    static int last_turn = -100;
+    static int last_phase = -1;
+    static int last_cycles = -1;
+    static int last_fault = -1;
     keymode mode;
     trackpattern pattern;
     trackstate1 state1;
@@ -137,24 +134,28 @@ void track_report(void)
     trackstate3 state3;
     uint32_t now = HAL_GetTick();
     int state;
-    int show_turn;
-    hwt101_turn_state turn;
+    state3_debug debug;
     const char *name;
-    static char message[64];
+    static char message[192];
     int length;
 
     if (!mission_report_snapshot(&mode, &pattern, &state1, &state2, &state3)) return;
     state = mode == key1_putong ? (int)state1 : mode == key2_teshu ? (int)state2 : (int)state3;
     name = mode == key1_putong ? state1_name(state1) : mode == key2_teshu ? state2_name(state2) : state3_name(state3);
-    show_turn = 0;
-    turn = hwt101_turn_get_state();
+    mission_state3_debug_snapshot(&debug);
     if (mode == last_mode && state == last_state &&
-        (!show_turn || (int)turn == last_turn) &&
+        (mode != key3_baidong ||
+         (debug.phase == last_phase && debug.cycles == last_cycles && (int)debug.fault == last_fault)) &&
         (now - last_tick) < 200U) return;
     if (huart1.gState != HAL_UART_STATE_READY) return;
 
-    if (show_turn)
-        length = snprintf(message, sizeof(message), "%s gyro=%s\r\n", name, turn_name(turn));
+    if (mode == key3_baidong)
+        length = snprintf(message, sizeof(message),
+                          "%s delta=%.1f valid=%u phase=%u cnt=%u left_hit=%u right_hit=%u fault=%s\r\n",
+                          name, (double)debug.delta, (unsigned int)debug.delta_valid,
+                          (unsigned int)debug.phase, (unsigned int)debug.cycles,
+                          (unsigned int)debug.left_hit, (unsigned int)debug.right_hit,
+                          state3_fault_name(debug.fault));
     else
         length = snprintf(message, sizeof(message), "%s\r\n", name);
     if (length <= 0 || (size_t)length >= sizeof(message)) return;
@@ -162,7 +163,9 @@ void track_report(void)
 
     last_mode = mode;
     last_state = state;
-    last_turn = (int)turn;
+    last_phase = debug.phase;
+    last_cycles = debug.cycles;
+    last_fault = (int)debug.fault;
     last_tick = now;
 }
 

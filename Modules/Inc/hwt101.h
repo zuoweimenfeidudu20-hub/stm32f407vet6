@@ -18,9 +18,9 @@ HAL_StatusTypeDef hwt101_init(UART_HandleTypeDef *uart);
 uint8_t hwt101_get_yaw(float *yaw, uint32_t *age_ms);
 float hwt101_angle_error(float target, float current);
 /* Positive angle follows increasing yaw; negative angle follows decreasing
- * yaw. Start once from the main loop, then sample in the 10 ms timer tick. */
+ * yaw. Start once from the main loop, then sample in the 1 ms timer tick. */
 HAL_StatusTypeDef hwt101_turn_begin(float delta_deg, uint32_t timeout_ms);
-void hwt101_turn_tick10ms(void);
+void hwt101_turn_tick1ms(void);
 /* -1: invalid angle/timeout/not started; 0: turning; 1: angle reached. */
 int hwt101_turn_result(void);
 hwt101_turn_state hwt101_turn_get_state(void);

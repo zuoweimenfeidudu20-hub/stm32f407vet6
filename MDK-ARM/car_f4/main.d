@@ -47,3 +47,4 @@ car_f4\main.o: ../Modules/Inc/uart.h
 car_f4\main.o: ../Modules/Inc/key.h
 car_f4\main.o: ../Modules/Inc/mission.h
 car_f4\main.o: ../Modules/Inc/hwt101.h
+car_f4\main.o: ../Modules/Inc/hcsr04.h

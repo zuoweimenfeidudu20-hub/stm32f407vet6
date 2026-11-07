@@ -12,5 +12,6 @@ void key_tick5ms(void);
 void key_init(void);
 keymode key_getmode(void);
 uint32_t key_get_key4_confirm_count(void);
+uint32_t key_get_key3_confirm_count(void);
 
 #endif

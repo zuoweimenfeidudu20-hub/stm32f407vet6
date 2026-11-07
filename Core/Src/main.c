@@ -34,6 +34,7 @@
 #include "key.h"
 #include "mission.h"
 #include "hwt101.h"
+#include "hcsr04.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -43,7 +44,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define ULTRASONIC_ENABLED 0
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -56,6 +57,9 @@
 /* USER CODE BEGIN PV */
 static uint32_t pidtrack_last_tick;
 static uint32_t key_last_tick;
+#if ULTRASONIC_ENABLED
+static uint32_t obstacle_last_tick;
+#endif
 static uint8_t pidtrack_was_enabled;
 // static volatile uint8_t key_scan_enabled;
 static volatile int pidmotor_enable=0;
@@ -120,6 +124,12 @@ int main(void)
   {
     Error_Handler();
   }
+#if ULTRASONIC_ENABLED
+  if (hcsr04_init() != HAL_OK)
+  {
+    Error_Handler();
+  }
+#endif
   key_init();
   // key_scan_enabled = 1U;
   if (motor_init() != HAL_OK)
@@ -137,6 +147,9 @@ int main(void)
   }
   pidtrack_last_tick=HAL_GetTick();
   key_last_tick=pidtrack_last_tick;
+#if ULTRASONIC_ENABLED
+  obstacle_last_tick=pidtrack_last_tick;
+#endif
   encoder_init();
   pidmotor_init();
   pidmotor_enable=1;
@@ -150,6 +163,13 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+#if ULTRASONIC_ENABLED
+    if ((HAL_GetTick() - obstacle_last_tick) >= 10U)
+    {
+      obstacle_last_tick = HAL_GetTick();
+      obstacle_check();
+    }
+#endif
     if (pidtrack_enable != 0)
     {
       if (pidtrack_was_enabled == 0U)
@@ -158,7 +178,7 @@ int main(void)
         pidtrack_last_tick = HAL_GetTick();
         pidtrack_was_enabled = 1U;
       }
-      if ((HAL_GetTick() - pidtrack_last_tick) >= 10U)
+      if ((HAL_GetTick() - pidtrack_last_tick) >= 1U)
       {
         pidtrack_last_tick = HAL_GetTick();
         mission_update(key_getmode());
@@ -245,10 +265,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   if (htim->Instance == TIM8)
   {
     HAL_IncTick();
-    if ((HAL_GetTick() % 10U) == 0U)
-    {
-      hwt101_turn_tick10ms();
-    }
+    hwt101_turn_tick1ms();
     // if (key_scan_enabled && (HAL_GetTick() % 5U) == 0U)
     // {
     //   key_tick5ms();

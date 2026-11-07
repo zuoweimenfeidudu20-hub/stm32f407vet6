@@ -147,7 +147,7 @@ HAL_StatusTypeDef hwt101_turn_begin(float delta_deg, uint32_t timeout_ms)
     return HAL_OK;
 }
 
-void hwt101_turn_tick10ms(void)
+void hwt101_turn_tick1ms(void)
 {
     float yaw;
     float directed_progress;

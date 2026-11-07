@@ -51,8 +51,29 @@ typedef enum
     state3_fault
 }trackstate3;
 
+typedef enum {
+    STATE3_FAULT_NONE,
+    STATE3_FAULT_NO_YAW,
+    STATE3_FAULT_HALF_TIMEOUT
+} state3_fault_reason;
+
+typedef struct {
+    float delta;
+    uint8_t delta_valid;
+    uint8_t phase;
+    uint8_t cycles;
+    uint8_t left_hit;
+    uint8_t right_hit;
+    state3_fault_reason fault;
+} state3_debug;
+
+void mission_state3_debug_snapshot(state3_debug *snapshot);
+
 uint8_t mission_report_snapshot(keymode *mode, trackpattern *pattern,
                                 trackstate1 *state1, trackstate2 *state2, trackstate3 *state3);
 void mission_reset(void);
 HAL_StatusTypeDef mission_update(keymode mode);
+/* Poll independently of mission state after hcsr04_init(). */
+void obstacle_check(void);
+void obstacle(void);
 #endif

@@ -39,5 +39,6 @@ car_f4\mission.o: ../Modules/Inc/key.h
 car_f4\mission.o: ../Modules/Inc/pidtrack.h
 car_f4\mission.o: ../Modules/Inc/pidmotor.h
 car_f4\mission.o: ../Modules/Inc/hwt101.h
+car_f4\mission.o: ../Modules/Inc/hcsr04.h
 car_f4\mission.o: ../Core/Inc/usart.h
 car_f4\mission.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdio.h
