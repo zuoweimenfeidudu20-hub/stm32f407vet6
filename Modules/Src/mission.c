@@ -22,8 +22,8 @@
 #define OUTER_MASK          ((1U << 0) | (1U << 1) | (1U << 10) | (1U << 11))
 #define SENSOR_CONFIRM_FRAMES 4
 
-#define LEFT_EDGE_MASK  (1U << 9)  /* Sensor 10: start right turn. */
-#define RIGHT_EDGE_MASK (1U << 2)  /* Sensor 3: start left turn. */
+#define LEFT_EDGE_MASK  (1U<<9)  
+#define RIGHT_EDGE_MASK (1U<<2) 
 #define STATE3_RIGHT_CONFIRM_FRAMES 1U
 #define STATE3_LEFT_CONFIRM_FRAMES 1U
 #define STATE3_HALF_TIMEOUT_MS 5000U
@@ -106,34 +106,10 @@ void obstacle_check(void)
 {
     float distance_cm;
 
-    if (hcsr04_read_cm(&distance_cm) == HAL_OK &&
-        distance_cm > 0.0f && distance_cm <= OBSTACLE_DISTANCE_CM)
+    if (read_cm(&distance_cm)==HAL_OK&&distance_cm>0.0f&&distance_cm<=OBSTACLE_DISTANCE_CM)
         obstacle();
 
-    /* The driver enforces its 60 ms minimum measurement interval. */
     (void)hcsr04_trigger();
-}
-
-void mission_state3_debug_snapshot(state3_debug *snapshot)
-{
-    if (snapshot == NULL) return;
-    *snapshot = state3_debug_info;
-    snapshot->phase = state3_phase;
-    snapshot->cycles = (uint8_t)cnt;
-}
-
-uint8_t mission_report_snapshot(keymode *mode, trackpattern *pattern,
-                                trackstate1 *state1, trackstate2 *state2, trackstate3 *state3)
-{
-    if (!report_valid || mode == NULL || pattern == NULL ||
-        state1 == NULL || state2 == NULL || state3 == NULL) return 0U;
-
-    *mode = previous_mode;
-    *pattern = report_pattern;
-    *state1 = current_state1;
-    *state2 = current_state2;
-    *state3 = current_state3;
-    return 1U;
 }
 
 
@@ -200,9 +176,9 @@ static uint8_t track_r90(keymode mode, trackpattern pattern, int error)
     else
     {
         r90_turn_active = 1U;
-        send_newtarget(mode == key3_baidong ? base_pwm3 : base_pwm2, mode == key3_baidong ? pwm_limit3 : pwm_limit2);
+        send_newtarget(mode==key3_baidong?base_pwm3:base_pwm2,mode==key3_baidong?pwm_limit3:pwm_limit2);
     }
-    return 1U;
+    return 1;
 }
 
 static int center_white_confirm(uint16_t bits)
@@ -406,8 +382,8 @@ static void track_run_abnormal(trackpattern pattern, int error, uint16_t bits)
         break;
 
     
-case state2_c_lockright:
-{
+    case state2_c_lockright:
+    {
     result=hwt101_turn_result();
 
     if(result<0)
@@ -426,7 +402,7 @@ case state2_c_lockright:
         send_newtarget(base_pwm2,pwm_limit2);
     }
     break;
-}
+    }
     
     case state2_stair1:
         if (cross_stage2!=2)
@@ -618,8 +594,7 @@ static void track_run_baidong(trackpattern pattern, int error)
         send_newtarget(0, 0);
         return;
     }
-    state3_debug_info.delta_valid = hwt101_get_yaw(&yaw, &age_ms) &&
-                                    age_ms <= STATE3_MAX_YAW_AGE_MS;
+    state3_debug_info.delta_valid=hwt101_get_yaw(&yaw, &age_ms)&&age_ms <= STATE3_MAX_YAW_AGE_MS;
     if (state3_debug_info.delta_valid)
         state3_debug_info.delta = hwt101_angle_error(yaw, state3_start_yaw);
     if (current_state3 == state3_line2 && !state3_debug_info.delta_valid)
@@ -663,8 +638,7 @@ static void track_run_baidong(trackpattern pattern, int error)
         break;
 
     case state3_line2:
-        if (state3_debug_info.delta >= STATE3_ENTRY_ANGLE_DEG ||
-            state3_debug_info.delta <= -STATE3_ENTRY_ANGLE_DEG)
+        if (state3_debug_info.delta>=STATE3_ENTRY_ANGLE_DEG||state3_debug_info.delta <= -STATE3_ENTRY_ANGLE_DEG)
         {
             cnt = 0;
             condition_rst3(state3_baidong, error);
@@ -806,7 +780,7 @@ void mission_reset(void)
     cnt=0;
 
     cross_stage1=0;
-    cross_stage2=1;  // state2_line 的进入条件要求它等于 1
+    cross_stage2=1;  //
 
     current_cnt=0;
     recover_ticks=0;//
@@ -836,18 +810,16 @@ HAL_StatusTypeDef mission_update(keymode mode)
     uint32_t key3_count = key_get_key3_confirm_count();
     uint32_t age_ms;
     report_valid = 0U;
-    if (mode != previous_mode ||
-        (mode == key3_baidong && key3_count != state3_key3_count))
+    if (mode!=previous_mode||(mode == key3_baidong && key3_count != state3_key3_count))
     {
         mission_reset();
-        previous_mode = mode;
+        previous_mode=mode;
     }
-    state3_key3_count = key3_count;
+    state3_key3_count=key3_count;
     if (mode == key3_baidong && state3_start_pending)
     {
         state3_start_pending = 0U;
-        if (!hwt101_get_yaw(&state3_start_yaw, &age_ms) ||
-            age_ms > STATE3_MAX_YAW_AGE_MS)
+        if(!hwt101_get_yaw(&state3_start_yaw, &age_ms)||age_ms > STATE3_MAX_YAW_AGE_MS)
             state3_fail(STATE3_FAULT_NO_YAW, 0);
     }
     if (mode!=key1_putong&&mode!=key2_teshu&&mode!=key3_baidong)
@@ -865,10 +837,7 @@ HAL_StatusTypeDef mission_update(keymode mode)
     pattern = track_analyze(bits, &error);
     state3_debug_info.left_hit = (bits & LEFT_EDGE_MASK) == LEFT_EDGE_MASK;
     state3_debug_info.right_hit = (bits & RIGHT_EDGE_MASK) == RIGHT_EDGE_MASK;
-    if (pattern == pattern_r90 &&
-        !((mode == key1_putong && current_state1 == state1_tofinish) ||
-          (mode == key2_teshu && current_state2 == state2_stair4) ||
-          (mode == key3_baidong && current_state3 == state3_tofinish)))
+    if (pattern == pattern_r90 &&!((mode == key1_putong && current_state1 == state1_tofinish)||(mode == key2_teshu && current_state2 == state2_stair4)||(mode == key3_baidong && current_state3 == state3_tofinish)))
         pattern = pattern_rightbranch;
     if (track_r90(mode, pattern, error))
     {

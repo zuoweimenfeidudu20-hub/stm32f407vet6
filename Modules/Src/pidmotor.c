@@ -11,6 +11,7 @@ static int pid_previous_cntr;
 
 PIDMotor_Controller left_pid = {0, 0, 0};
 PIDMotor_Controller right_pid = {0, 0, 0};
+
 volatile int init_rightpwm=0;
 volatile int init_leftpwm=0;
 volatile int right_count_10ms=0;
@@ -105,13 +106,13 @@ int pid_motor(PIDMotor_Controller *controller, int target_percent,int target_cou
     error=target_counts-measured_counts;
     derivative = error - controller->previous_error;
     previous_integral = controller->integral;
-    controller->integral = Clamp(controller->integral + error,
-                                 -integral_limit, integral_limit);
+    controller->integral = Clamp(controller->integral+error,-integral_limit, integral_limit);
+    
     correction = (motor_kp*error+motor_ki*controller->integral+motor_kd*derivative)/pid_motor_gain_scale;
 
     if(target_percent>0){
         output=Clamp(target_percent + correction, 0, 100);
-    } else if(target_percent<0) {
+    }else if(target_percent<0) {
         output = Clamp(target_percent + correction, -100, 0);
     } else {
         pidmotor_rst(controller);
@@ -149,8 +150,9 @@ void pidmotor_update(void)
 
 void pidmotor_init(void)
 {
-    uint32_t primask = __get_PRIMASK();
+    uint32_t primask=__get_PRIMASK();
     __disable_irq();
+    
     init_leftpwm = 0;
     init_rightpwm = 0;
     left_output = 0;
@@ -160,6 +162,7 @@ void pidmotor_init(void)
     pid_previous_cntl = (uint16_t)__HAL_TIM_GET_COUNTER(&htim3);
     pid_previous_cntr = (uint16_t)__HAL_TIM_GET_COUNTER(&htim4);
     allstop();
+    
     if(primask==0){
         __enable_irq();
     }

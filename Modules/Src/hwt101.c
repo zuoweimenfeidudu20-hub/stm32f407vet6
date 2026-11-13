@@ -175,8 +175,7 @@ void hwt101_turn_tick1ms(void)
         turn_end_valid = 1U;
         turn_status = HWT101_TURN_WRONG_DIRECTION;
     }
-    else if (directed_progress >=
-             (turn_delta_deg < 0.0f ? -turn_delta_deg : turn_delta_deg) - HWT101_TURN_TOLERANCE_DEG) {
+    else if(directed_progress>=(turn_delta_deg < 0.0f ? -turn_delta_deg : turn_delta_deg) - HWT101_TURN_TOLERANCE_DEG) {
         turn_end_yaw = yaw;
         turn_end_valid = 1U;
         turn_status = 1;
@@ -197,9 +196,13 @@ uint8_t hwt101_turn_get_angles(float *start, float *end, uint8_t *end_valid)
 {
     uint32_t primask;
     uint8_t valid;
-    if (start == NULL || end == NULL || end_valid == NULL) return 0U;
+    if (start==NULL||end==NULL||end_valid==NULL){
+        return 0;
+    }
+    
     primask = __get_PRIMASK();
     __disable_irq();
+    
     valid = turn_angles_valid;
     *start = turn_start_yaw;
     *end = turn_end_yaw;

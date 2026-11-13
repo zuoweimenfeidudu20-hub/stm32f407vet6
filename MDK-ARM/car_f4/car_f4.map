@@ -321,7 +321,7 @@ Section Cross References
     mission.o(i.mission_update) refers to mission.o(.bss) for .bss
     mission.o(i.obstacle) refers to mission.o(i.send_newtarget) for send_newtarget
     mission.o(i.obstacle) refers to stm32f4xx_hal.o(i.HAL_Delay) for HAL_Delay
-    mission.o(i.obstacle_check) refers to hcsr04.o(i.hcsr04_read_cm) for hcsr04_read_cm
+    mission.o(i.obstacle_check) refers to hcsr04.o(i.read_cm) for read_cm
     mission.o(i.obstacle_check) refers to mission.o(i.obstacle) for obstacle
     mission.o(i.obstacle_check) refers to hcsr04.o(i.hcsr04_trigger) for hcsr04_trigger
     mission.o(i.send_newtarget) refers to pidtrack.o(i.set_target) for set_target
@@ -406,12 +406,12 @@ Section Cross References
     hcsr04.o(i.hcsr04_init) refers to stm32f4xx_hal_tim.o(i.HAL_TIM_IC_Stop_IT) for HAL_TIM_IC_Stop_IT
     hcsr04.o(i.hcsr04_init) refers to tim.o(.bss) for htim9
     hcsr04.o(i.hcsr04_init) refers to hcsr04.o(.data) for .data
-    hcsr04.o(i.hcsr04_read_cm) refers to stm32f4xx_hal.o(i.HAL_GetTick) for HAL_GetTick
-    hcsr04.o(i.hcsr04_read_cm) refers to hcsr04.o(.data) for .data
     hcsr04.o(i.hcsr04_trigger) refers to stm32f4xx_hal.o(i.HAL_GetTick) for HAL_GetTick
     hcsr04.o(i.hcsr04_trigger) refers to stm32f4xx_hal_gpio.o(i.HAL_GPIO_WritePin) for HAL_GPIO_WritePin
     hcsr04.o(i.hcsr04_trigger) refers to hcsr04.o(.data) for .data
     hcsr04.o(i.hcsr04_trigger) refers to tim.o(.bss) for htim9
+    hcsr04.o(i.read_cm) refers to stm32f4xx_hal.o(i.HAL_GetTick) for HAL_GetTick
+    hcsr04.o(i.read_cm) refers to hcsr04.o(.data) for .data
     uart.o(i.track_report) refers to _printf_percent.o(.ARM.Collect$$_printf_percent$$00000000) for _printf_percent
     uart.o(i.track_report) refers to _printf_u.o(.ARM.Collect$$_printf_percent$$0000000A) for _printf_u
     uart.o(i.track_report) refers to _printf_f.o(.ARM.Collect$$_printf_percent$$00000003) for _printf_f
@@ -1338,8 +1338,8 @@ Removing Unused input sections from the image.
     Removing hcsr04.o(.revsh_text), (4 bytes).
     Removing hcsr04.o(.rrx_text), (6 bytes).
     Removing hcsr04.o(i.hcsr04_init), (164 bytes).
-    Removing hcsr04.o(i.hcsr04_read_cm), (108 bytes).
     Removing hcsr04.o(i.hcsr04_trigger), (140 bytes).
+    Removing hcsr04.o(i.read_cm), (76 bytes).
     Removing uart.o(.rev16_text), (4 bytes).
     Removing uart.o(.revsh_text), (4 bytes).
     Removing uart.o(.rrx_text), (6 bytes).
@@ -1831,7 +1831,7 @@ Removing Unused input sections from the image.
     Removing system_stm32f4xx.o(.rrx_text), (6 bytes).
     Removing system_stm32f4xx.o(i.SystemCoreClockUpdate), (120 bytes).
 
-576 unused section(s) (total 46491 bytes) removed from the image.
+576 unused section(s) (total 46459 bytes) removed from the image.
 
 ==============================================================================
 
@@ -2446,43 +2446,43 @@ Image Symbol Table
     turn_timeout_ms                          0x2000013c   Data           4  hwt101.o(.data)
     turn_start_yaw                           0x20000140   Data           4  hwt101.o(.data)
     turn_end_yaw                             0x20000144   Data           4  hwt101.o(.data)
-    .data                                    0x20000148   Section       12  hcsr04.o(.data)
+    .data                                    0x20000148   Section       20  hcsr04.o(.data)
     state                                    0x20000148   Data           1  hcsr04.o(.data)
-    initialized                              0x20000149   Data           1  hcsr04.o(.data)
-    triggered_once                           0x2000014a   Data           1  hcsr04.o(.data)
-    rise_tick                                0x2000014c   Data           2  hcsr04.o(.data)
-    echo_us                                  0x2000014e   Data           2  hcsr04.o(.data)
+    rise_tick                                0x2000014a   Data           2  hcsr04.o(.data)
+    echo_us                                  0x2000014c   Data           2  hcsr04.o(.data)
     trigger_tick                             0x20000150   Data           4  hcsr04.o(.data)
-    .data                                    0x20000154   Section       32  uart.o(.data)
-    uart_last_status                         0x20000154   Data           1  uart.o(.data)
-    last_mode                                0x20000155   Data           1  uart.o(.data)
-    last_tick                                0x20000158   Data           4  uart.o(.data)
-    last_tick                                0x2000015c   Data           4  uart.o(.data)
+    initialized                              0x20000154   Data           4  hcsr04.o(.data)
+    triggered_once                           0x20000158   Data           4  hcsr04.o(.data)
+    .data                                    0x2000015c   Section       32  uart.o(.data)
+    uart_last_status                         0x2000015c   Data           1  uart.o(.data)
+    last_mode                                0x2000015d   Data           1  uart.o(.data)
     last_tick                                0x20000160   Data           4  uart.o(.data)
-    last_state                               0x20000164   Data           4  uart.o(.data)
-    last_phase                               0x20000168   Data           4  uart.o(.data)
-    last_cycles                              0x2000016c   Data           4  uart.o(.data)
-    last_fault                               0x20000170   Data           4  uart.o(.data)
-    .data                                    0x20000174   Section       12  stm32f4xx_hal.o(.data)
-    .data                                    0x20000180   Section        4  system_stm32f4xx.o(.data)
-    .bss                                     0x20000184   Section       84  i2c.o(.bss)
-    .bss                                     0x200001d8   Section      272  spi.o(.bss)
-    .bss                                     0x200002e8   Section      360  tim.o(.bss)
-    .bss                                     0x20000450   Section      792  usart.o(.bss)
-    .bss                                     0x20000768   Section       72  stm32f4xx_hal_timebase_tim.o(.bss)
-    .bss                                     0x200007b0   Section       24  pidmotor.o(.bss)
-    .bss                                     0x200007c8   Section       12  mission.o(.bss)
-    state3_debug_info                        0x200007c8   Data          12  mission.o(.bss)
-    .bss                                     0x200007d4   Section       11  hwt101.o(.bss)
-    frame                                    0x200007d4   Data          11  hwt101.o(.bss)
-    .bss                                     0x200007df   Section      192  uart.o(.bss)
-    message                                  0x200007df   Data         192  uart.o(.bss)
-    .bss                                     0x200008a0   Section       96  libspace.o(.bss)
-    HEAP                                     0x20000900   Section     1024  startup_stm32f407xx.o(HEAP)
-    Heap_Mem                                 0x20000900   Data        1024  startup_stm32f407xx.o(HEAP)
-    STACK                                    0x20000d00   Section     1024  startup_stm32f407xx.o(STACK)
-    Stack_Mem                                0x20000d00   Data        1024  startup_stm32f407xx.o(STACK)
-    __initial_sp                             0x20001100   Data           0  startup_stm32f407xx.o(STACK)
+    last_tick                                0x20000164   Data           4  uart.o(.data)
+    last_tick                                0x20000168   Data           4  uart.o(.data)
+    last_state                               0x2000016c   Data           4  uart.o(.data)
+    last_phase                               0x20000170   Data           4  uart.o(.data)
+    last_cycles                              0x20000174   Data           4  uart.o(.data)
+    last_fault                               0x20000178   Data           4  uart.o(.data)
+    .data                                    0x2000017c   Section       12  stm32f4xx_hal.o(.data)
+    .data                                    0x20000188   Section        4  system_stm32f4xx.o(.data)
+    .bss                                     0x2000018c   Section       84  i2c.o(.bss)
+    .bss                                     0x200001e0   Section      272  spi.o(.bss)
+    .bss                                     0x200002f0   Section      360  tim.o(.bss)
+    .bss                                     0x20000458   Section      792  usart.o(.bss)
+    .bss                                     0x20000770   Section       72  stm32f4xx_hal_timebase_tim.o(.bss)
+    .bss                                     0x200007b8   Section       24  pidmotor.o(.bss)
+    .bss                                     0x200007d0   Section       12  mission.o(.bss)
+    state3_debug_info                        0x200007d0   Data          12  mission.o(.bss)
+    .bss                                     0x200007dc   Section       11  hwt101.o(.bss)
+    frame                                    0x200007dc   Data          11  hwt101.o(.bss)
+    .bss                                     0x200007e7   Section      192  uart.o(.bss)
+    message                                  0x200007e7   Data         192  uart.o(.bss)
+    .bss                                     0x200008a8   Section       96  libspace.o(.bss)
+    HEAP                                     0x20000908   Section     1024  startup_stm32f407xx.o(HEAP)
+    Heap_Mem                                 0x20000908   Data        1024  startup_stm32f407xx.o(HEAP)
+    STACK                                    0x20000d08   Section     1024  startup_stm32f407xx.o(STACK)
+    Stack_Mem                                0x20000d08   Data        1024  startup_stm32f407xx.o(STACK)
+    __initial_sp                             0x20001108   Data           0  startup_stm32f407xx.o(STACK)
 
     Global Symbols
 
@@ -2873,33 +2873,33 @@ Image Symbol Table
     right_output                             0x20000038   Data           4  pidmotor.o(.data)
     left_output                              0x2000003c   Data           4  pidmotor.o(.data)
     cnt                                      0x20000090   Data           4  mission.o(.data)
-    uwTickFreq                               0x20000174   Data           1  stm32f4xx_hal.o(.data)
-    uwTickPrio                               0x20000178   Data           4  stm32f4xx_hal.o(.data)
-    uwTick                                   0x2000017c   Data           4  stm32f4xx_hal.o(.data)
-    SystemCoreClock                          0x20000180   Data           4  system_stm32f4xx.o(.data)
-    hi2c1                                    0x20000184   Data          84  i2c.o(.bss)
-    hspi1                                    0x200001d8   Data          88  spi.o(.bss)
-    hspi3                                    0x20000230   Data          88  spi.o(.bss)
-    hdma_spi1_tx                             0x20000288   Data          96  spi.o(.bss)
-    htim1                                    0x200002e8   Data          72  tim.o(.bss)
-    htim3                                    0x20000330   Data          72  tim.o(.bss)
-    htim4                                    0x20000378   Data          72  tim.o(.bss)
-    htim5                                    0x200003c0   Data          72  tim.o(.bss)
-    htim9                                    0x20000408   Data          72  tim.o(.bss)
-    huart4                                   0x20000450   Data          72  usart.o(.bss)
-    huart1                                   0x20000498   Data          72  usart.o(.bss)
-    huart3                                   0x200004e0   Data          72  usart.o(.bss)
-    hdma_uart4_rx                            0x20000528   Data          96  usart.o(.bss)
-    hdma_uart4_tx                            0x20000588   Data          96  usart.o(.bss)
-    hdma_usart1_rx                           0x200005e8   Data          96  usart.o(.bss)
-    hdma_usart1_tx                           0x20000648   Data          96  usart.o(.bss)
-    hdma_usart3_rx                           0x200006a8   Data          96  usart.o(.bss)
-    hdma_usart3_tx                           0x20000708   Data          96  usart.o(.bss)
-    htim8                                    0x20000768   Data          72  stm32f4xx_hal_timebase_tim.o(.bss)
-    left_pid                                 0x200007b0   Data          12  pidmotor.o(.bss)
-    right_pid                                0x200007bc   Data          12  pidmotor.o(.bss)
-    __libspace_start                         0x200008a0   Data          96  libspace.o(.bss)
-    __temporary_stack_top$libspace           0x20000900   Data           0  libspace.o(.bss)
+    uwTickFreq                               0x2000017c   Data           1  stm32f4xx_hal.o(.data)
+    uwTickPrio                               0x20000180   Data           4  stm32f4xx_hal.o(.data)
+    uwTick                                   0x20000184   Data           4  stm32f4xx_hal.o(.data)
+    SystemCoreClock                          0x20000188   Data           4  system_stm32f4xx.o(.data)
+    hi2c1                                    0x2000018c   Data          84  i2c.o(.bss)
+    hspi1                                    0x200001e0   Data          88  spi.o(.bss)
+    hspi3                                    0x20000238   Data          88  spi.o(.bss)
+    hdma_spi1_tx                             0x20000290   Data          96  spi.o(.bss)
+    htim1                                    0x200002f0   Data          72  tim.o(.bss)
+    htim3                                    0x20000338   Data          72  tim.o(.bss)
+    htim4                                    0x20000380   Data          72  tim.o(.bss)
+    htim5                                    0x200003c8   Data          72  tim.o(.bss)
+    htim9                                    0x20000410   Data          72  tim.o(.bss)
+    huart4                                   0x20000458   Data          72  usart.o(.bss)
+    huart1                                   0x200004a0   Data          72  usart.o(.bss)
+    huart3                                   0x200004e8   Data          72  usart.o(.bss)
+    hdma_uart4_rx                            0x20000530   Data          96  usart.o(.bss)
+    hdma_uart4_tx                            0x20000590   Data          96  usart.o(.bss)
+    hdma_usart1_rx                           0x200005f0   Data          96  usart.o(.bss)
+    hdma_usart1_tx                           0x20000650   Data          96  usart.o(.bss)
+    hdma_usart3_rx                           0x200006b0   Data          96  usart.o(.bss)
+    hdma_usart3_tx                           0x20000710   Data          96  usart.o(.bss)
+    htim8                                    0x20000770   Data          72  stm32f4xx_hal_timebase_tim.o(.bss)
+    left_pid                                 0x200007b8   Data          12  pidmotor.o(.bss)
+    right_pid                                0x200007c4   Data          12  pidmotor.o(.bss)
+    __libspace_start                         0x200008a8   Data          96  libspace.o(.bss)
+    __temporary_stack_top$libspace           0x20000908   Data           0  libspace.o(.bss)
 
 
 
@@ -2909,7 +2909,7 @@ Memory Map of the image
 
   Image Entry point : 0x08000189
 
-  Load Region LR_IROM1 (Base: 0x08000000, Size: 0x000068b8, Max: 0x00080000, ABSOLUTE, COMPRESSED[0x00006778])
+  Load Region LR_IROM1 (Base: 0x08000000, Size: 0x000068c0, Max: 0x00080000, ABSOLUTE, COMPRESSED[0x00006778])
 
     Execution Region ER_IROM1 (Exec base: 0x08000000, Load base: 0x08000000, Size: 0x00006734, Max: 0x00080000, ABSOLUTE)
 
@@ -3232,7 +3232,7 @@ Memory Map of the image
     0x08006718   0x08006718   0x0000001c   Data   RO         4825    locale$$data        c_w.l(lc_numeric_c.o)
 
 
-    Execution Region RW_IRAM1 (Exec base: 0x20000000, Load base: 0x08006734, Size: 0x00001100, Max: 0x0001c000, ABSOLUTE, COMPRESSED[0x00000044])
+    Execution Region RW_IRAM1 (Exec base: 0x20000000, Load base: 0x08006734, Size: 0x00001108, Max: 0x0001c000, ABSOLUTE, COMPRESSED[0x00000044])
 
     Exec Addr    Load Addr    Size         Type   Attr      Idx    E Section Name        Object
 
@@ -3243,23 +3243,23 @@ Memory Map of the image
     0x20000058   COMPRESSED   0x00000024   Data   RW         1019    .data               pidtrack.o
     0x2000007c   COMPRESSED   0x000000a0   Data   RW         1095    .data               mission.o
     0x2000011c   COMPRESSED   0x0000002c   Data   RW         1218    .data               hwt101.o
-    0x20000148   COMPRESSED   0x0000000c   Data   RW         1296    .data               hcsr04.o
-    0x20000154   COMPRESSED   0x00000020   Data   RW         1346    .data               uart.o
-    0x20000174   COMPRESSED   0x0000000c   Data   RW         3294    .data               stm32f4xx_hal.o
-    0x20000180   COMPRESSED   0x00000004   Data   RW         4669    .data               system_stm32f4xx.o
-    0x20000184        -       0x00000054   Zero   RW          261    .bss                i2c.o
-    0x200001d8        -       0x00000110   Zero   RW          304    .bss                spi.o
-    0x200002e8        -       0x00000168   Zero   RW          360    .bss                tim.o
-    0x20000450        -       0x00000318   Zero   RW          449    .bss                usart.o
-    0x20000768        -       0x00000048   Zero   RW          655    .bss                stm32f4xx_hal_timebase_tim.o
-    0x200007b0        -       0x00000018   Zero   RW          932    .bss                pidmotor.o
-    0x200007c8        -       0x0000000c   Zero   RW         1093    .bss                mission.o
-    0x200007d4        -       0x0000000b   Zero   RW         1217    .bss                hwt101.o
-    0x200007df        -       0x000000c0   Zero   RW         1344    .bss                uart.o
-    0x2000089f   COMPRESSED   0x00000001   PAD
-    0x200008a0        -       0x00000060   Zero   RW         4833    .bss                c_w.l(libspace.o)
-    0x20000900        -       0x00000400   Zero   RW            2    HEAP                startup_stm32f407xx.o
-    0x20000d00        -       0x00000400   Zero   RW            1    STACK               startup_stm32f407xx.o
+    0x20000148   COMPRESSED   0x00000014   Data   RW         1296    .data               hcsr04.o
+    0x2000015c   COMPRESSED   0x00000020   Data   RW         1346    .data               uart.o
+    0x2000017c   COMPRESSED   0x0000000c   Data   RW         3294    .data               stm32f4xx_hal.o
+    0x20000188   COMPRESSED   0x00000004   Data   RW         4669    .data               system_stm32f4xx.o
+    0x2000018c        -       0x00000054   Zero   RW          261    .bss                i2c.o
+    0x200001e0        -       0x00000110   Zero   RW          304    .bss                spi.o
+    0x200002f0        -       0x00000168   Zero   RW          360    .bss                tim.o
+    0x20000458        -       0x00000318   Zero   RW          449    .bss                usart.o
+    0x20000770        -       0x00000048   Zero   RW          655    .bss                stm32f4xx_hal_timebase_tim.o
+    0x200007b8        -       0x00000018   Zero   RW          932    .bss                pidmotor.o
+    0x200007d0        -       0x0000000c   Zero   RW         1093    .bss                mission.o
+    0x200007dc        -       0x0000000b   Zero   RW         1217    .bss                hwt101.o
+    0x200007e7        -       0x000000c0   Zero   RW         1344    .bss                uart.o
+    0x200008a7   COMPRESSED   0x00000001   PAD
+    0x200008a8        -       0x00000060   Zero   RW         4833    .bss                c_w.l(libspace.o)
+    0x20000908        -       0x00000400   Zero   RW            2    HEAP                startup_stm32f407xx.o
+    0x20000d08        -       0x00000400   Zero   RW            1    STACK               startup_stm32f407xx.o
 
 
     Execution Region RW_IRAM2 (Exec base: 0x2001c000, Load base: 0x08006778, Size: 0x00000000, Max: 0x00004000, ABSOLUTE)
@@ -3274,39 +3274,39 @@ Image component sizes
 
       Code (inc. data)   RO Data    RW Data    ZI Data      Debug   Object Name
 
-       156          4          0          0          0        846   dma.o
-       328         20          0          0          0       1095   gpio.o
-        72          8          0         12          0       1521   hcsr04.o
-       772         78          0         44         11       7330   hwt101.o
-       172         28          0          0         84       1653   i2c.o
-       316         34         24         18          0       4117   key.o
-       448         28          0         20          0     711572   main.o
-      2340        150         36        160         12      15623   mission.o
-       462         54         16          2          0       7284   motor.o
-       570         46          0         48         24      12235   pidmotor.o
-       270         34          0         36          0       4356   pidtrack.o
-       368         44          0          0        272       2451   spi.o
-        64         26        392          0       2048        836   startup_stm32f407xx.o
-        80         14          0         12          0       8042   stm32f4xx_hal.o
-       158         14          0          0          0      32998   stm32f4xx_hal_cortex.o
-      1084         16          8          0          0       7294   stm32f4xx_hal_dma.o
-       516         46          0          0          0       2831   stm32f4xx_hal_gpio.o
-      2100         46          0          0          0      11466   stm32f4xx_hal_i2c.o
-        56          4          0          0          0        854   stm32f4xx_hal_msp.o
-      1408         82          0          0          0       5877   stm32f4xx_hal_rcc.o
-       188          0          0          0          0       1203   stm32f4xx_hal_spi.o
-      2784        174          0          0          0      20740   stm32f4xx_hal_tim.o
-       232         28          0          0          0       3281   stm32f4xx_hal_tim_ex.o
-       140         20          0          0         72       1415   stm32f4xx_hal_timebase_tim.o
-      1692         26          0          0          0      12457   stm32f4xx_hal_uart.o
-       172         76          0          0          0       8444   stm32f4xx_it.o
-        16          4         24          4          0       1111   system_stm32f4xx.o
-      1152        114          0          0        360       6526   tim.o
-      1040        576         75         32        192       5212   uart.o
-       860         64          0          0        792       3718   usart.o
+       156          4          0          0          0        858   dma.o
+       328         20          0          0          0       1111   gpio.o
+        72          8          0         20          0       1537   hcsr04.o
+       772         78          0         44         11       7398   hwt101.o
+       172         28          0          0         84       1677   i2c.o
+       316         34         24         18          0       4169   key.o
+       448         28          0         20          0     711704   main.o
+      2340        150         36        160         12      15727   mission.o
+       462         54         16          2          0       7356   motor.o
+       570         46          0         48         24      12303   pidmotor.o
+       270         34          0         36          0       4400   pidtrack.o
+       368         44          0          0        272       2479   spi.o
+        64         26        392          0       2048        844   startup_stm32f407xx.o
+        80         14          0         12          0       8082   stm32f4xx_hal.o
+       158         14          0          0          0      33034   stm32f4xx_hal_cortex.o
+      1084         16          8          0          0       7346   stm32f4xx_hal_dma.o
+       516         46          0          0          0       2851   stm32f4xx_hal_gpio.o
+      2100         46          0          0          0      11538   stm32f4xx_hal_i2c.o
+        56          4          0          0          0        866   stm32f4xx_hal_msp.o
+      1408         82          0          0          0       5917   stm32f4xx_hal_rcc.o
+       188          0          0          0          0       1215   stm32f4xx_hal_spi.o
+      2784        174          0          0          0      20876   stm32f4xx_hal_tim.o
+       232         28          0          0          0       3305   stm32f4xx_hal_tim_ex.o
+       140         20          0          0         72       1431   stm32f4xx_hal_timebase_tim.o
+      1692         26          0          0          0      12577   stm32f4xx_hal_uart.o
+       172         76          0          0          0       8548   stm32f4xx_it.o
+        16          4         24          4          0       1127   system_stm32f4xx.o
+      1152        114          0          0        360       6586   tim.o
+      1040        576         75         32        192       5252   uart.o
+       860         64          0          0        792       3750   usart.o
 
     ----------------------------------------------------------------------
-     20048       1858        608        388       3868     904388   Object Totals
+     20048       1858        608        396       3868     905864   Object Totals
          0          0         32          0          0          0   (incl. Generated)
         32          0          1          0          1          0   (incl. Padding)
 
@@ -3389,14 +3389,14 @@ Image component sizes
 
       Code (inc. data)   RO Data    RW Data    ZI Data      Debug   
 
-     25636       2072        784        388       3964     888080   Grand Totals
-     25636       2072        784         68       3964     888080   ELF Image Totals (compressed)
+     25636       2072        784        396       3964     889556   Grand Totals
+     25636       2072        784         68       3964     889556   ELF Image Totals (compressed)
      25636       2072        784         68          0          0   ROM Totals
 
 ==============================================================================
 
     Total RO  Size (Code + RO Data)                26420 (  25.80kB)
-    Total RW  Size (RW Data + ZI Data)              4352 (   4.25kB)
+    Total RW  Size (RW Data + ZI Data)              4360 (   4.26kB)
     Total ROM Size (Code + RO Data + RW Data)      26488 (  25.87kB)
 
 ==============================================================================

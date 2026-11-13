@@ -69,11 +69,9 @@ typedef struct {
 
 void mission_state3_debug_snapshot(state3_debug *snapshot);
 
-uint8_t mission_report_snapshot(keymode *mode, trackpattern *pattern,
-                                trackstate1 *state1, trackstate2 *state2, trackstate3 *state3);
+uint8_t mission_report_snapshot(keymode *mode, trackpattern *pattern,trackstate1 *state1, trackstate2 *state2, trackstate3 *state3);
 void mission_reset(void);
 HAL_StatusTypeDef mission_update(keymode mode);
-/* Poll independently of mission state after hcsr04_init(). */
 void obstacle_check(void);
 void obstacle(void);
 #endif

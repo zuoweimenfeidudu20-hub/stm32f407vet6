@@ -55,18 +55,26 @@ int Key_ReadPress(keyid id)
 void key_selectmode(keyid id)
 {
     switch (id) {
-    case id1: mode = key1_putong; break;
-    case id2: mode = key2_teshu; break;
+    case id1: 
+        mode=key1_putong;
+    break;
+    
+    case id2:
+        mode=key2_teshu;
+    break;
+    
     case id3:
         ++key3_confirm_count;
         mode = key3_baidong;
-        break;
+    break;
+    
     case id4:
         ++key4_confirm_count;
         mode = key4_idle;
         set_target(0, 0);
-        break;
-    default: break;
+    break;
+    
+    default:break;
     }
 }
 

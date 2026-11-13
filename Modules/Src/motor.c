@@ -16,10 +16,7 @@ static void motor_pwm(uint32_t pwm1, uint32_t pwm2,uint8_t reverse, uint32_t per
 
 HAL_StatusTypeDef motor_init(void)
 {
-    static const uint32_t channels[]={
-        MOTOR_LEFT_PWM1_CHANNEL, MOTOR_LEFT_PWM2_CHANNEL,
-        MOTOR_RIGHT_PWM1_CHANNEL, MOTOR_RIGHT_PWM2_CHANNEL
-    };
+    static const uint32_t channels[]={MOTOR_LEFT_PWM1_CHANNEL, MOTOR_LEFT_PWM2_CHANNEL,MOTOR_RIGHT_PWM1_CHANNEL, MOTOR_RIGHT_PWM2_CHANNEL};
     HAL_StatusTypeDef status;
 
     right_reverse=0;
